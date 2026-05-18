@@ -1,7 +1,7 @@
 const CACHE_VERSION = 'v2';
 const RUNTIME_CACHE = `habit-tracker-runtime-${CACHE_VERSION}`;
 
-const PRECACHE_URLS = ['/', '/index.html', '/manifest.json', '/favicon.svg'];
+const PRECACHE_URLS = ['/', '/index.html', '/manifest.json', '/icon.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

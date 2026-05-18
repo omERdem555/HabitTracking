@@ -550,8 +550,8 @@ useEffect(() => {
             data,
             requireInteraction: true,
             silent: false,
-            icon: '/favicon.svg',
-            badge: '/favicon.svg',
+            icon: '/icon.png',
+            badge: '/icon.png',
           } as any);
         } else {
           // fallback
