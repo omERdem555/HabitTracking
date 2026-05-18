@@ -451,36 +451,42 @@ function App() {
         <section className="card" style={{ marginBottom: '1rem' }}>
           <div
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: '1rem',
-              flexWrap: 'wrap',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '0.75rem',
+              width: '100%',
+              maxWidth: '320px',
             }}
           >
-            <div>
-              <strong style={{ display: 'block', marginBottom: '0.35rem' }}>
-                {i18n.language === 'tr'
-                  ? 'Bildirimler ve çevrimdışı kullanım için uygulamayı yükleyin'
-                  : 'Install app for reminders & offline use'}
-              </strong>
-            </div>
+            <button
+              type="button"
+              onClick={handleInstallApp}
+              style={{
+                width: '100%',
+                padding: '0.95rem 1rem',
+                borderRadius: '14px',
+                border: '1px solid var(--button-border)',
+                background: 'var(--button-bg)',
+                color: 'var(--button-text)',
+              }}
+            >
+              {i18n.language === 'tr' ? 'Yükle' : 'Install'}
+            </button>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button type="button" onClick={handleInstallApp}>
-                {i18n.language === 'tr' ? 'Yükle' : 'Install'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setShowInstallPrompt(false)}
-                style={{
-                  opacity: 0.8,
-                }}
-              >
-                {i18n.language === 'tr' ? 'Kapat' : 'Close'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowInstallPrompt(false)}
+              style={{
+                width: '100%',
+                padding: '0.95rem 1rem',
+                borderRadius: '14px',
+                border: '1px solid var(--button-border)',
+                background: 'var(--button-bg)',
+                color: 'var(--button-text)',
+              }}
+            >
+              {i18n.language === 'tr' ? 'Kapat' : 'Close'}
+            </button>
           </div>
         </section>
       )}
