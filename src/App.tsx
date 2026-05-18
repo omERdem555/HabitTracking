@@ -499,6 +499,11 @@ useEffect(() => {
 
   tryEnsurePermission();
 
+
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true;
+
   const tick = () => {
     if (Notification.permission !== 'granted') return;
     if (!isWithinWindow(state.notificationSettings)) return;
@@ -539,7 +544,15 @@ useEffect(() => {
         const data = { type: 'reminder', habitIds: missing.map(h => h.id) };
 
         if (registration && registration.showNotification) {
-          registration.showNotification(title, { body, actions, data } as any);
+          registration.showNotification(title, {
+            body,
+            actions,
+            data,
+            requireInteraction: true,
+            silent: false,
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
+          } as any);
         } else {
           // fallback
           // eslint-disable-next-line no-new
@@ -554,6 +567,7 @@ useEffect(() => {
   };
 
   // run immediately, then every 15 minutes to evaluate
+  if (!isStandalone) return;
   tick();
   const id = window.setInterval(tick, 15 * 60 * 1000);
 
