@@ -557,3 +557,86 @@ header h1 {
     grid-template-columns: 1fr;
   }
 }
+
+
+
+/*Settings Modal*/
+.settings-modal {
+  width: min(100%, 460px);
+}
+
+.settings-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.settings-field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.settings-label {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.settings-field input,
+.settings-field select {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: var(--input-bg);
+  color: var(--text-primary);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.settings-field input:focus,
+.settings-field select:focus {
+  border-color: rgba(96, 165, 250, 0.7);
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.12);
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem;
+  border-radius: 16px;
+  background: var(--habit-row-bg);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.settings-toggle input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #60a5fa;
+}
+
+.settings-save-btn,
+.modal-close-btn {
+  border: 1px solid var(--button-border);
+  background: var(--button-bg);
+  color: var(--button-text);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  transition:
+    transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.settings-save-btn:hover,
+.modal-close-btn:hover {
+  transform: translateY(-1px);
+  background-color: rgba(96, 165, 250, 0.18);
+}
+
+.settings-save-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+}

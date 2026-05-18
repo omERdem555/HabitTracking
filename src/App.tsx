@@ -886,16 +886,26 @@ useEffect(() => {
 
       {settingsOpen && (
         <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal settings-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{i18n.language === 'tr' ? 'Bildirim Ayarları' : 'Notification Settings'}</h3>
-              <button type="button" onClick={() => setSettingsOpen(false)}>
+              <h3>
+                {i18n.language === 'tr'
+                  ? 'Bildirim Ayarları'
+                  : 'Notification Settings'}
+              </h3>
+
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setSettingsOpen(false)}
+              >
                 {t('close')}
               </button>
             </div>
 
-            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <label>
+            <div className="settings-grid">
+
+              <label className="settings-toggle">
                 <input
                   type="checkbox"
                   checked={state.notificationSettings.enabled}
@@ -909,11 +919,21 @@ useEffect(() => {
                     })
                   }
                 />
-                {i18n.language === 'tr' ? ' Bildirimleri Etkinleştir' : ' Enable Notifications'}
+
+                <span>
+                  {i18n.language === 'tr'
+                    ? 'Bildirimleri Etkinleştir'
+                    : 'Enable Notifications'}
+                </span>
               </label>
 
-              <label>
-                {i18n.language === 'tr' ? 'Hatırlatma Aralığı (Saat)' : 'Reminder Interval (Hours)'}
+              <div className="settings-field">
+                <span className="settings-label">
+                  {i18n.language === 'tr'
+                    ? 'Hatırlatma Aralığı (Saat)'
+                    : 'Reminder Interval (Hours)'}
+                </span>
+
                 <select
                   value={state.notificationSettings.intervalHours}
                   onChange={(e) =>
@@ -921,19 +941,33 @@ useEffect(() => {
                       type: 'updateNotificationSettings',
                       payload: {
                         ...state.notificationSettings,
-                        intervalHours: Number(e.target.value) as 1 | 2 | 3 | 4 | 6 | 8 | 12,
+                        intervalHours: Number(e.target.value) as
+                          | 1
+                          | 2
+                          | 3
+                          | 4
+                          | 6
+                          | 8
+                          | 12,
                       },
                     })
                   }
                 >
-                  {[1,2,3,4,6,8,12].map((h) => (
-                    <option key={h} value={h}>{h}</option>
+                  {[1, 2, 3, 4, 6, 8, 12].map((h) => (
+                    <option key={h} value={h}>
+                      {h}
+                    </option>
                   ))}
                 </select>
-              </label>
+              </div>
 
-              <label>
-                {i18n.language === 'tr' ? 'Başlangıç Saati' : 'Start Hour'}
+              <div className="settings-field">
+                <span className="settings-label">
+                  {i18n.language === 'tr'
+                    ? 'Başlangıç Saati'
+                    : 'Start Hour'}
+                </span>
+
                 <input
                   type="number"
                   min={0}
@@ -949,10 +983,15 @@ useEffect(() => {
                     })
                   }
                 />
-              </label>
+              </div>
 
-              <label>
-                {i18n.language === 'tr' ? 'Bitiş Saati' : 'End Hour'}
+              <div className="settings-field">
+                <span className="settings-label">
+                  {i18n.language === 'tr'
+                    ? 'Bitiş Saati'
+                    : 'End Hour'}
+                </span>
+
                 <input
                   type="number"
                   min={0}
@@ -968,9 +1007,13 @@ useEffect(() => {
                     })
                   }
                 />
-              </label>
+              </div>
 
-              <button type="button" onClick={handleSaveSettings}>
+              <button
+                type="button"
+                className="settings-save-btn"
+                onClick={handleSaveSettings}
+              >
                 {t('save')}
               </button>
             </div>
