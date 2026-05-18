@@ -2,6 +2,8 @@ import { useEffect, useMemo, useReducer, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loadState, saveState, defaultState } from './lib/storage';
 import type { Action, AppState, Habit, Completion } from './types';
+const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
+const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
 const HABIT_COLOR = '#60a5fa';
 
@@ -190,6 +192,28 @@ function App() {
     document.body.setAttribute('data-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+
+    const isMobile = window.innerWidth <= 768;
+
+    if (!isMobile || isStandalone) return;
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPromptEvent(e);
+      setShowInstallPrompt(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
   const today = localDateString();
   const completionSet = useMemo(() => {
     return new Set(normalizeCompletions(state.completions).map((item) => `${item.habitId}|${item.date}`));
@@ -377,6 +401,21 @@ function App() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
+  const handleInstallApp = async () => {
+    if (!installPromptEvent) return;
+
+    const promptEvent = installPromptEvent as any;
+    promptEvent.prompt();
+
+    const choiceResult = await promptEvent.userChoice;
+
+    if (choiceResult.outcome === 'accepted') {
+      setShowInstallPrompt(false);
+    }
+
+    setInstallPromptEvent(null);
+  };
+
   return (
     <div className="app-shell">
       <nav className="navbar">
@@ -407,6 +446,44 @@ function App() {
           </p>
         </div>
       </header>
+
+      {showInstallPrompt && (
+        <section className="card" style={{ marginBottom: '1rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '1rem',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div>
+              <strong style={{ display: 'block', marginBottom: '0.35rem' }}>
+                {i18n.language === 'tr'
+                  ? 'Bildirimler ve çevrimdışı kullanım için uygulamayı yükleyin'
+                  : 'Install app for reminders & offline use'}
+              </strong>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button type="button" onClick={handleInstallApp}>
+                {i18n.language === 'tr' ? 'Yükle' : 'Install'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowInstallPrompt(false)}
+                style={{
+                  opacity: 0.8,
+                }}
+              >
+                {i18n.language === 'tr' ? 'Kapat' : 'Close'}
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="card">
         <div className="form-row">
