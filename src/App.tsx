@@ -26,6 +26,7 @@ const reducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
     case 'load':
       return action.payload;
+
     case 'addHabit': {
       const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
       return {
@@ -42,6 +43,7 @@ const reducer = (state: AppState, action: Action): AppState => {
         ],
       };
     }
+
     case 'editHabit':
       return {
         ...state,
@@ -49,6 +51,7 @@ const reducer = (state: AppState, action: Action): AppState => {
           habit.id === action.payload.id ? { ...habit, name: action.payload.name.trim() } : habit,
         ),
       };
+
     case 'toggleHabitActive':
       return {
         ...state,
@@ -62,6 +65,7 @@ const reducer = (state: AppState, action: Action): AppState => {
             : habit,
         ),
       };
+
     case 'addCompletion': {
       const date = normalizeDate(action.payload.date);
       const id =
@@ -82,6 +86,7 @@ const reducer = (state: AppState, action: Action): AppState => {
         ],
       };
     }
+
     case 'removeCompletion':
       return {
         ...state,
@@ -89,6 +94,13 @@ const reducer = (state: AppState, action: Action): AppState => {
           (completion) => completion.id !== action.payload.completionId,
         ),
       };
+
+    case 'updateNotificationSettings':
+      return {
+        ...state,
+        notificationSettings: action.payload,
+      };
+
     default:
       return state;
   }
@@ -178,6 +190,7 @@ function App() {
   const [undoModal, setUndoModal] = useState<{ habitId: string; date: string } | null>(null);
   const [expandedCompletions, setExpandedCompletions] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     dispatch({ type: 'load', payload: loadState() });
@@ -401,6 +414,182 @@ function App() {
     setTheme(theme === 'light' ? 'dark' : 'light');
   };
 
+  const requestNotificationPermission = async () => {
+  if (!('Notification' in window)) return false;
+
+  const permission = await Notification.requestPermission();
+
+  return permission === 'granted';
+};
+
+const handleSaveSettings = async () => {
+  if (state.notificationSettings.enabled) {
+    const granted = await requestNotificationPermission();
+
+    if (!granted) {
+      alert(
+        i18n.language === 'tr'
+          ? 'Bildirim izni gerekli.'
+          : 'Notification permission required.',
+      );
+      return;
+    }
+  }
+
+  setSettingsOpen(false);
+};
+
+// Reminder scheduler & missed-habit detection (foreground)
+const META_KEY = 'habit-tracker-meta';
+
+const readMeta = () => {
+  try {
+    const raw = localStorage.getItem(META_KEY);
+    if (!raw) return { lastNotified: 0 };
+    return JSON.parse(raw) as { lastNotified: number };
+  } catch {
+    return { lastNotified: 0 };
+  }
+};
+
+const writeMeta = (meta: { lastNotified: number }) => {
+  try {
+    localStorage.setItem(META_KEY, JSON.stringify(meta));
+  } catch {
+    // silent
+  }
+};
+
+const isWithinWindow = (settings: typeof state.notificationSettings) => {
+  const now = new Date();
+  const hour = now.getHours();
+  return settings.startHour <= hour && hour <= settings.endHour;
+};
+
+const getMissingToday = () => {
+  const todayNorm = localDateString();
+  const completedTodaySet = new Set(normalizeCompletions(state.completions).map(c => `${c.habitId}|${c.date}`));
+  return state.habits.filter(h => h.active && !completedTodaySet.has(`${h.id}|${todayNorm}`));
+};
+
+const getMissedYesterday = () => {
+  const yesterday = getPreviousDate(localDateString());
+  const beforeYesterday = getPreviousDate(yesterday);
+  const norm = normalizeCompletions(state.completions);
+  return state.habits.filter(h => {
+    if (!h.active) return false;
+    const hadYesterday = norm.some(c => c.habitId === h.id && c.date === yesterday);
+    const hadBefore = norm.some(c => c.habitId === h.id && c.date === beforeYesterday);
+    // consider missed if there was activity before but none yesterday
+    return !hadYesterday && hadBefore;
+  });
+};
+
+useEffect(() => {
+  if (!state.notificationSettings.enabled) return;
+  if (typeof Notification === 'undefined') return;
+
+  let scheduled = true;
+
+  const tryEnsurePermission = async () => {
+    if (Notification.permission === 'default') {
+      await requestNotificationPermission();
+    }
+  };
+
+  tryEnsurePermission();
+
+  const tick = () => {
+    if (Notification.permission !== 'granted') return;
+    if (!isWithinWindow(state.notificationSettings)) return;
+
+    const meta = readMeta();
+    const now = Date.now();
+    const minInterval = state.notificationSettings.intervalHours * 60 * 60 * 1000;
+    if (now - (meta.lastNotified || 0) < minInterval) return;
+
+    const missing = getMissingToday();
+    if (missing.length === 0) return;
+
+    const missedYesterday = getMissedYesterday();
+
+    const title = i18n.language === 'tr' ? 'Hatırlatma' : 'Reminder';
+    let body = '';
+
+    if (missedYesterday.length > 0) {
+      const names = missedYesterday.slice(0, 3).map(h => h.name).join(', ');
+      body = i18n.language === 'tr'
+        ? `Dün kaçırıldı: ${names}. Bugün yeniden başlamak ister misin?`
+        : `Missed yesterday: ${names}. Restart today?`;
+    } else {
+      const names = missing.slice(0, 3).map(h => h.name).join(', ');
+      body = i18n.language === 'tr'
+        ? `${names} alışkanlık(lar) bugün tamamlanmamış. Tamamlamak ister misin?`
+        : `${names} habit(s) not completed today. Do you want to complete them?`;
+    }
+
+    (async () => {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        const actions = [
+          { action: 'complete', title: i18n.language === 'tr' ? 'Tamamla' : 'Complete' },
+          { action: 'dismiss', title: i18n.language === 'tr' ? 'Kapat' : 'Dismiss' },
+        ];
+
+        const data = { type: 'reminder', habitIds: missing.map(h => h.id) };
+
+        if (registration && registration.showNotification) {
+          registration.showNotification(title, { body, actions, data } as any);
+        } else {
+          // fallback
+          // eslint-disable-next-line no-new
+          new Notification(title, { body });
+        }
+
+        writeMeta({ lastNotified: now });
+      } catch {
+        // ignore
+      }
+    })();
+  };
+
+  // run immediately, then every 15 minutes to evaluate
+  tick();
+  const id = window.setInterval(tick, 15 * 60 * 1000);
+
+  return () => {
+    scheduled = false;
+    window.clearInterval(id);
+  };
+}, [state.notificationSettings, state.habits, state.completions, i18n.language]);
+
+// Listen for messages from service worker (notification actions)
+useEffect(() => {
+  const handler = (event: MessageEvent) => {
+    const msg = event.data;
+    if (!msg || msg.type !== 'notificationAction') return;
+
+    const { action, data } = msg as { action?: string; data?: any };
+
+    if (action === 'complete' && data?.habitIds && Array.isArray(data.habitIds)) {
+      const today = localDateString();
+      data.habitIds.forEach((habitId: string) => {
+        dispatch({ type: 'addCompletion', payload: { habitId, date: today } });
+      });
+    }
+  };
+
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener('message', handler as any);
+  }
+
+  return () => {
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.removeEventListener('message', handler as any);
+    }
+  };
+}, [dispatch]);
+
   const handleInstallApp = async () => {
     if (!installPromptEvent) return;
 
@@ -429,12 +618,23 @@ function App() {
             >
               {theme === 'light' ? t('dark') : t('light')}
             </button>
+
+
             <button
               type="button"
               className="lang-button"
               onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'tr' : 'en')}
             >
               {i18n.language === 'en' ? 'TR' : 'ENG'}
+            </button>
+
+
+            <button
+              type="button"
+              className="theme-button"
+              onClick={() => setSettingsOpen(true)}
+            >
+              {i18n.language === 'tr' ? 'Ayarlar' : 'Settings'}
             </button>
           </div>
         </div>
@@ -683,6 +883,100 @@ function App() {
           })}
         </div>
       </section>
+
+      {settingsOpen && (
+        <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{i18n.language === 'tr' ? 'Bildirim Ayarları' : 'Notification Settings'}</h3>
+              <button type="button" onClick={() => setSettingsOpen(false)}>
+                {t('close')}
+              </button>
+            </div>
+
+            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={state.notificationSettings.enabled}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'updateNotificationSettings',
+                      payload: {
+                        ...state.notificationSettings,
+                        enabled: e.target.checked,
+                      },
+                    })
+                  }
+                />
+                {i18n.language === 'tr' ? ' Bildirimleri Etkinleştir' : ' Enable Notifications'}
+              </label>
+
+              <label>
+                {i18n.language === 'tr' ? 'Hatırlatma Aralığı (Saat)' : 'Reminder Interval (Hours)'}
+                <select
+                  value={state.notificationSettings.intervalHours}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'updateNotificationSettings',
+                      payload: {
+                        ...state.notificationSettings,
+                        intervalHours: Number(e.target.value) as 1 | 2 | 3 | 4 | 6 | 8 | 12,
+                      },
+                    })
+                  }
+                >
+                  {[1,2,3,4,6,8,12].map((h) => (
+                    <option key={h} value={h}>{h}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                {i18n.language === 'tr' ? 'Başlangıç Saati' : 'Start Hour'}
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={state.notificationSettings.startHour}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'updateNotificationSettings',
+                      payload: {
+                        ...state.notificationSettings,
+                        startHour: Number(e.target.value),
+                      },
+                    })
+                  }
+                />
+              </label>
+
+              <label>
+                {i18n.language === 'tr' ? 'Bitiş Saati' : 'End Hour'}
+                <input
+                  type="number"
+                  min={0}
+                  max={23}
+                  value={state.notificationSettings.endHour}
+                  onChange={(e) =>
+                    dispatch({
+                      type: 'updateNotificationSettings',
+                      payload: {
+                        ...state.notificationSettings,
+                        endHour: Number(e.target.value),
+                      },
+                    })
+                  }
+                />
+              </label>
+
+              <button type="button" onClick={handleSaveSettings}>
+                {t('save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedDay && (
         <div className="modal-backdrop" onClick={() => setSelectedDay(null)}>

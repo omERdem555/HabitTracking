@@ -7,6 +7,13 @@ export const defaultState: AppState = {
   schemaVersion: CURRENT_SCHEMA,
   habits: [],
   completions: [],
+  notificationSettings: {
+    
+    enabled: false,
+    intervalHours: 3,
+    startHour: 9,
+    endHour: 21,
+},
 };
 
 const normalizeDate = (value: string): string => {
@@ -75,6 +82,7 @@ export function loadState(): AppState {
       completions: Array.isArray(parsed.completions)
         ? normalizeCompletions(parsed.completions)
         : [],
+      notificationSettings: parsed.notificationSettings ?? defaultState.notificationSettings,
     };
   } catch {
     return defaultState;
