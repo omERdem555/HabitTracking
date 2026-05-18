@@ -2,8 +2,6 @@ import { useEffect, useMemo, useReducer, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loadState, saveState, defaultState } from './lib/storage';
 import type { Action, AppState, Habit, Completion } from './types';
-const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
-const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
 const HABIT_COLOR = '#60a5fa';
 
@@ -167,6 +165,8 @@ const buildYearSummaries = (
 function App() {
   const { t, i18n } = useTranslation();
   const [state, dispatch] = useReducer(reducer, defaultState);
+  const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [habitName, setHabitName] = useState('');
   const [habitColor, setHabitColor] = useState(HABIT_COLOR);
   const [editingId, setEditingId] = useState<string | null>(null);
