@@ -458,6 +458,16 @@ function App() {
               maxWidth: '320px',
             }}
           >
+
+          <div>
+            <strong style={{ display: 'block', marginBottom: '0.35rem' }}>
+              {i18n.language === 'tr'
+                ? 'Bildirimler ve çevrimdışı kullanım için uygulamayı yükleyin'
+                : 'Install app for reminders & offline use'}
+            </strong>
+          </div>
+
+
             <button
               type="button"
               onClick={handleInstallApp}
