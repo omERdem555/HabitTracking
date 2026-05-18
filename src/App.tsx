@@ -634,7 +634,7 @@ useEffect(() => {
               className="theme-button"
               onClick={() => setSettingsOpen(true)}
             >
-              {i18n.language === 'tr' ? 'Ayarlar' : 'Settings'}
+              ⚙️
             </button>
           </div>
         </div>
