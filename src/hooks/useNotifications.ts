@@ -16,17 +16,6 @@ type Params = {
 
 const META_KEY = 'habit-tracker-meta';
 
-const ensurePermission = async () => {
-  if (!('Notification' in window)) return false;
-
-  if (Notification.permission === 'granted') return true;
-
-  if (Notification.permission === 'denied') return false;
-
-  const result = await Notification.requestPermission();
-  return result === 'granted';
-};
-
 const readMeta = () => {
   try {
     const raw = localStorage.getItem(META_KEY);
@@ -40,9 +29,7 @@ const readMeta = () => {
 const writeMeta = (meta: { lastNotified: number }) => {
   try {
     localStorage.setItem(META_KEY, JSON.stringify(meta));
-  } catch {
-    // ignore
-  }
+  } catch {}
 };
 
 const normalizeDate = (value: string) => value.slice(0, 10);
@@ -58,10 +45,13 @@ const isWithinWindow = (settings: NotificationSettings) => {
   return settings.startHour <= hour && hour <= settings.endHour;
 };
 
-const requestPermission = async () => {
+const ensurePermission = async () => {
   if (!('Notification' in window)) return false;
+
   if (Notification.permission === 'granted') return true;
+
   if (Notification.permission === 'denied') return false;
+
   const result = await Notification.requestPermission();
   return result === 'granted';
 };
@@ -77,17 +67,11 @@ export default function useNotifications({
 }: Params) {
   const intervalRef = useRef<number | null>(null);
 
-    useEffect(() => {
+  useEffect(() => {
     if (!enabled) return;
-    useEffect(() => {
-    if (!enabled) return;
-    if (!('Notification' in window)) return;
-    if (Notification.permission !== 'default') return;
-
-    Notification.requestPermission();
-    }, [enabled]);
-    if (typeof Notification === 'undefined') return;
     if (!isStandalone) return;
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
 
     const getMissingToday = () => {
       const today = localDateString();
@@ -95,7 +79,9 @@ export default function useNotifications({
         completions.map(c => `${c.habitId}|${normalizeDate(c.date)}`)
       );
 
-      return habits.filter(h => h.active && !set.has(`${h.id}|${today}`));
+      return habits.filter(
+        h => h.active && !set.has(`${h.id}|${today}`)
+      );
     };
 
     const getMissedYesterday = () => {
@@ -107,11 +93,15 @@ export default function useNotifications({
         if (!h.active) return false;
 
         const hadYesterday = completions.some(
-          c => c.habitId === h.id && normalizeDate(c.date) === yesterday
+          c =>
+            c.habitId === h.id &&
+            normalizeDate(c.date) === yesterday
         );
 
         const hadBefore = completions.some(
-          c => c.habitId === h.id && normalizeDate(c.date) === beforeYesterday
+          c =>
+            c.habitId === h.id &&
+            normalizeDate(c.date) === beforeYesterday
         );
 
         return !hadYesterday && hadBefore;
@@ -120,13 +110,16 @@ export default function useNotifications({
 
     const tick = async () => {
       const ok = await ensurePermission();
-if (!ok) return;
+      if (!ok) return;
+
       if (!isWithinWindow(settings)) return;
 
       const meta = readMeta();
       const now = Date.now();
 
-      const minInterval = settings.intervalHours * 60 * 60 * 1000;
+      const minInterval =
+        settings.intervalHours * 60 * 60 * 1000;
+
       if (now - meta.lastNotified < minInterval) return;
 
       const missing = getMissingToday();
@@ -134,29 +127,41 @@ if (!ok) return;
 
       const missedYesterday = getMissedYesterday();
 
-      const title = language === 'tr' ? 'Hatırlatma' : 'Reminder';
+      const title =
+        language === 'tr' ? 'Hatırlatma' : 'Reminder';
 
       const body =
         missedYesterday.length > 0
           ? language === 'tr'
-            ? `Dün kaçırılan: ${missedYesterday.slice(0, 3).map(h => h.name).join(', ')}`
-            : `Missed yesterday: ${missedYesterday.slice(0, 3).map(h => h.name).join(', ')}`
+            ? `Dün kaçırılan: ${missedYesterday
+                .slice(0, 3)
+                .map(h => h.name)
+                .join(', ')}`
+            : `Missed yesterday: ${missedYesterday
+                .slice(0, 3)
+                .map(h => h.name)
+                .join(', ')}`
           : language === 'tr'
-            ? `Bugün eksik: ${missing.slice(0, 3).map(h => h.name).join(', ')}`
-            : `Missing today: ${missing.slice(0, 3).map(h => h.name).join(', ')}`;
+          ? `Bugün eksik: ${missing
+              .slice(0, 3)
+              .map(h => h.name)
+              .join(', ')}`
+          : `Missing today: ${missing
+              .slice(0, 3)
+              .map(h => h.name)
+              .join(', ')}`;
 
       try {
-        const registration = await navigator.serviceWorker.getRegistration();
-
-        const data = {
-          type: 'reminder',
-          habitIds: missing.map(h => h.id),
-        };
+        const registration =
+          await navigator.serviceWorker.getRegistration();
 
         if (registration?.showNotification) {
           registration.showNotification(title, {
             body,
-            data,
+            data: {
+              type: 'reminder',
+              habitIds: missing.map(h => h.id),
+            },
             icon: '/icon512.png',
           });
         } else {
@@ -169,9 +174,11 @@ if (!ok) return;
       }
     };
 
-    intervalRef.current = window.setInterval(tick, 15 * 60 * 1000);
+    intervalRef.current = window.setInterval(
+      tick,
+      15 * 60 * 1000
+    );
 
-    // run once immediately
     tick();
 
     return () => {
@@ -179,7 +186,14 @@ if (!ok) return;
         clearInterval(intervalRef.current);
       }
     };
-  }, [enabled, settings, habits, completions, language, isStandalone]);
+  }, [
+    enabled,
+    settings,
+    habits,
+    completions,
+    language,
+    isStandalone,
+  ]);
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -188,7 +202,10 @@ if (!ok) return;
 
       const { action, data } = msg;
 
-      if (action === 'complete' && Array.isArray(data?.habitIds)) {
+      if (
+        action === 'complete' &&
+        Array.isArray(data?.habitIds)
+      ) {
         const today = localDateString();
 
         data.habitIds.forEach((habitId: string) => {
@@ -200,10 +217,16 @@ if (!ok) return;
       }
     };
 
-    navigator.serviceWorker?.addEventListener('message', handler as any);
+    navigator.serviceWorker?.addEventListener(
+      'message',
+      handler as any
+    );
 
     return () => {
-      navigator.serviceWorker?.removeEventListener('message', handler as any);
+      navigator.serviceWorker?.removeEventListener(
+        'message',
+        handler as any
+      );
     };
   }, [dispatch]);
 }
