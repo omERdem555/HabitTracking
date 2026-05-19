@@ -70,70 +70,52 @@ export default function useNotifications({
       return habits.filter(h => h.active && !doneSet.has(h.id));
     };
 
-    const canNotify = () => {
-      return Notification.permission === 'granted';
-    };
-
     const tick = async () => {
-    if (!('Notification' in window)) return;
-    if (Notification.permission !== 'granted') return;
+      if (Notification.permission !== 'granted') return;
 
-    const meta = readMeta();
-    const now = Date.now();
+      const hour = new Date().getHours();
+      if (hour < settings.startHour || hour > settings.endHour) return;
 
-    const interval = settings.intervalHours * 60 * 60 * 1000;
-    if (now - meta.lastNotified < interval) return;
+      const meta = readMeta();
+      const now = Date.now();
 
-    const missing = getMissingToday();
-    if (missing.length === 0) return;
+      const interval = settings.intervalHours * 60 * 60 * 1000;
+      if (now - meta.lastNotified < interval) return;
 
-    const missedYesterday = getMissedYesterday();
+      const missing = getMissingToday();
+      if (missing.length === 0) return;
 
-    const title = language === 'tr' ? 'Hatırlatma' : 'Reminder';
+      const missedYesterday = getMissedYesterday();
 
-    const body = buildReminderMessage(
-        language,
-        missing,
-        missedYesterday
-    );
+      const title = language === 'tr' ? 'Hatırlatma' : 'Reminder';
 
-    try {
+      const body = buildReminderMessage(language, missing, missedYesterday);
+
+      try {
         const reg = await navigator.serviceWorker.getRegistration();
 
-        const options = {
-        body,
-        icon: '/icon512.png',
-        data: {
-            type: 'reminder',
-            habitIds: missing.map(h => h.id),
-        },
-        };
-
         if (reg?.showNotification) {
-        reg.showNotification(title, options);
+          reg.showNotification(title, {
+            body,
+            icon: '/icon512.png',
+            data: {
+              type: 'reminder',
+              habitIds: missing.map(h => h.id),
+            },
+          });
         } else {
-        new Notification(title, {
-            body: options.body,
-        });
+          new Notification(title, { body });
         }
 
         writeMeta({ lastNotified: now });
-    } catch {
-        // silent fail
-    }
+      } catch {}
     };
 
-    intervalRef.current = window.setInterval(
-      tick,
-      15 * 60 * 1000
-    );
-
+    intervalRef.current = window.setInterval(tick, 15 * 60 * 1000);
     tick();
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [enabled, settings, habits, completions, language, isStandalone]);
 }

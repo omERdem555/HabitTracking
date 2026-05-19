@@ -8,13 +8,14 @@ export const defaultState: AppState = {
   habits: [],
   completions: [],
   notificationSettings: {
-    
     enabled: false,
-    intervalHours: 3,
+    intervalHours: 2,
     startHour: 9,
     endHour: 21,
-},
+    permissionStatus: 'default',
+  }
 };
+
 
 const normalizeDate = (value: string): string => {
   const [year, month, day] = value.split('-').map(Number);

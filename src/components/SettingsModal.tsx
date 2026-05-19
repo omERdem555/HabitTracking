@@ -20,6 +20,43 @@ function SettingsModal({
 
   if (!settingsOpen) return null;
 
+  const syncPermissionStatus = async (enabled: boolean) => {
+    if (!('Notification' in window)) {
+      dispatch({
+        type: 'updateNotificationSettings',
+        payload: {
+          ...state.notificationSettings,
+          enabled: false,
+          permissionStatus: 'denied',
+        },
+      });
+      return;
+    }
+
+    if (!enabled) {
+      dispatch({
+        type: 'updateNotificationSettings',
+        payload: {
+          ...state.notificationSettings,
+          enabled: false,
+          permissionStatus: 'default',
+        },
+      });
+      return;
+    }
+
+    const result = await Notification.requestPermission();
+
+    dispatch({
+      type: 'updateNotificationSettings',
+      payload: {
+        ...state.notificationSettings,
+        enabled: result === 'granted',
+        permissionStatus: result,
+      },
+    });
+  };
+
   return (
     <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>
       <div
@@ -43,20 +80,14 @@ function SettingsModal({
         </div>
 
         <div className="settings-grid">
+
+          {/* ENABLE */}
           <label className="settings-toggle">
             <input
               type="checkbox"
               checked={state.notificationSettings.enabled}
               onChange={async (e) => {
-                const enabled = e.target.checked;
-
-                dispatch({
-                  type: 'updateNotificationSettings',
-                  payload: {
-                    ...state.notificationSettings,
-                    enabled,
-                  },
-                });
+                await syncPermissionStatus(e.target.checked);
               }}
             />
 
@@ -67,6 +98,17 @@ function SettingsModal({
             </span>
           </label>
 
+          {/* STATUS */}
+          <div style={{ fontSize: 12, opacity: 0.7 }}>
+            {state.notificationSettings.permissionStatus === 'granted' &&
+              'Bildirim izni verildi'}
+            {state.notificationSettings.permissionStatus === 'denied' &&
+              'Bildirim izni reddedildi'}
+            {state.notificationSettings.permissionStatus === 'default' &&
+              'İzin bekleniyor'}
+          </div>
+
+          {/* INTERVAL */}
           <div className="settings-field">
             <span className="settings-label">
               {i18n.language === 'tr'
@@ -94,11 +136,10 @@ function SettingsModal({
             </select>
           </div>
 
+          {/* START */}
           <div className="settings-field">
             <span className="settings-label">
-              {i18n.language === 'tr'
-                ? 'Başlangıç Saati'
-                : 'Start Hour'}
+              {i18n.language === 'tr' ? 'Başlangıç Saati' : 'Start Hour'}
             </span>
 
             <input
@@ -118,11 +159,10 @@ function SettingsModal({
             />
           </div>
 
+          {/* END */}
           <div className="settings-field">
             <span className="settings-label">
-              {i18n.language === 'tr'
-                ? 'Bitiş Saati'
-                : 'End Hour'}
+              {i18n.language === 'tr' ? 'Bitiş Saati' : 'End Hour'}
             </span>
 
             <input
