@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const RUNTIME_CACHE = `habit-tracker-runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
@@ -42,7 +42,11 @@ self.addEventListener('fetch', (event) => {
       fetch(event.request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put('/index.html', copy));
+
+          caches.open(RUNTIME_CACHE).then((cache) => {
+            cache.put('/index.html', copy);
+          });
+
           return response;
         })
         .catch(() => caches.match('/index.html')),

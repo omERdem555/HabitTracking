@@ -73,7 +73,11 @@ export function loadState(): AppState {
 
     // 🔒 Schema kontrolü
     if (!parsed || parsed.schemaVersion !== CURRENT_SCHEMA) {
-      return defaultState;
+      return {
+        ...defaultState,
+        habits: parsed?.habits ?? [],
+        completions: [],
+      };
     }
 
     return {
