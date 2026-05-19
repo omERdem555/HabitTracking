@@ -209,7 +209,6 @@ function App() {
 
 
   useEffect(() => {
-    if (!isStandalone) return;
 
     const isMobile = window.innerWidth <= 768;
 
@@ -486,15 +485,17 @@ const getMissedYesterday = () => {
   });
 };
 
+const didRunRef = useRef(false);
+
 useEffect(() => {
   if (!state.notificationSettings.enabled) return;
   if (typeof Notification === 'undefined') return;
-
+  
   // 🔥 FIX: app açılır açılmaz tetiklenen ilk cycle'ı blokla
-  if (!didInitRef.current) {
-    didInitRef.current = true;
-    return;
-  }
+  if (didRunRef.current) return;
+  didRunRef.current = true;
+  
+  if (document.visibilityState !== 'visible') return;
 
   let scheduled = true;
 
@@ -506,7 +507,6 @@ useEffect(() => {
 
   tryEnsurePermission();
 
-  if (!isStandalone) return;
 
   const tick = () => {
     if (Notification.permission !== 'granted') return;
@@ -574,11 +574,15 @@ useEffect(() => {
   if (!isStandalone) return;
   const id = window.setInterval(tick, 15 * 60 * 1000);
 
+
   return () => {
     scheduled = false;
     window.clearInterval(id);
   };
 }, [state.notificationSettings, state.habits, state.completions, i18n.language]);
+
+
+
 
 // Listen for messages from service worker (notification actions)
 useEffect(() => {
