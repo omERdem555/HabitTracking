@@ -75,7 +75,7 @@ function App() {
   /* PWA install prompt */
   useEffect(() => {
     const isMobile = window.innerWidth <= 768;
-    if (!isMobile || isStandalone) return;
+    //if (!isMobile || isStandalone) return;
 
     const handler = (e: Event) => {
       e.preventDefault();
