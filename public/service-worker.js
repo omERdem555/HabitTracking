@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const RUNTIME_CACHE = `habit-tracker-runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
