@@ -35,14 +35,15 @@ export default function useNotifications({
   habits,
   completions,
   language,
-  isStandalone,
 }: Params) {
   const intervalRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (!isStandalone) return;
     if (!('Notification' in window)) return;
+
+    // ❗ single source of truth
+    if (!enabled) return;
+    if (Notification.permission !== 'granted') return;
 
     const getMissingToday = () => {
       const today = localDateString();
@@ -71,9 +72,8 @@ export default function useNotifications({
     };
 
     const tick = async () => {
-      if (Notification.permission !== 'granted') return;
-
       const hour = new Date().getHours();
+
       if (hour < settings.startHour || hour > settings.endHour) return;
 
       const meta = readMeta();
@@ -88,21 +88,22 @@ export default function useNotifications({
       const missedYesterday = getMissedYesterday();
 
       const title = language === 'tr' ? 'Hatırlatma' : 'Reminder';
-
       const body = buildReminderMessage(language, missing, missedYesterday);
 
       try {
         const reg = await navigator.serviceWorker.getRegistration();
 
+        const payload = {
+          body,
+          icon: '/icon512.png',
+          data: {
+            type: 'reminder',
+            habitIds: missing.map(h => h.id),
+          },
+        };
+
         if (reg?.showNotification) {
-          reg.showNotification(title, {
-            body,
-            icon: '/icon512.png',
-            data: {
-              type: 'reminder',
-              habitIds: missing.map(h => h.id),
-            },
-          });
+          reg.showNotification(title, payload);
         } else {
           new Notification(title, { body });
         }
@@ -111,11 +112,13 @@ export default function useNotifications({
       } catch {}
     };
 
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
     intervalRef.current = window.setInterval(tick, 15 * 60 * 1000);
     tick();
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [enabled, settings, habits, completions, language, isStandalone]);
+  }, [enabled, settings, habits, completions, language]);
 }

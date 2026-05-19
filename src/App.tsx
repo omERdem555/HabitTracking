@@ -22,6 +22,7 @@ import SummaryCards from './components/SummaryCards';
 import UndoModal from './components/UndoModal';
 import YearHeatmap from './components/YearHeatmap';
 import Navbar from './components/Navbar';
+import AddHabitForm from './components/AddHabitForm';
 
 /* hooks */
 import useNotifications from './hooks/useNotifications';
@@ -265,6 +266,13 @@ function App() {
     color: 'var(--text-primary)',
   };
 
+  const handleAddHabit = (name: string, color: string) => {
+    dispatch({
+      type: 'addHabit',
+      payload: { name, color },
+    });
+  };
+
   /* ================= RENDER ================= */
 
   return (
@@ -279,6 +287,8 @@ function App() {
       <header>
         <p>{t('subtitle')}</p>
       </header>
+
+      <AddHabitForm onAdd={handleAddHabit} t={t} />
 
       <InstallPrompt
         showInstallPrompt={showInstallPrompt}
