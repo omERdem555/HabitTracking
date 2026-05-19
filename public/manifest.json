@@ -29,7 +29,14 @@
     {
       "name": "Habit Tracker",
       "short_name": "Habit Tracker",
-      "url": "/"
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icon96.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
     }
   ],
 

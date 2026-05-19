@@ -3,7 +3,6 @@ const RUNTIME_CACHE = `habit-tracker-runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   '/',
-  '/index.html',
   '/manifest.json',
   '/icon72.png',
   '/icon96.png',
