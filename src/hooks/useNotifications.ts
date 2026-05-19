@@ -16,6 +16,17 @@ type Params = {
 
 const META_KEY = 'habit-tracker-meta';
 
+const ensurePermission = async () => {
+  if (!('Notification' in window)) return false;
+
+  if (Notification.permission === 'granted') return true;
+
+  if (Notification.permission === 'denied') return false;
+
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+};
+
 const readMeta = () => {
   try {
     const raw = localStorage.getItem(META_KEY);
@@ -66,8 +77,15 @@ export default function useNotifications({
 }: Params) {
   const intervalRef = useRef<number | null>(null);
 
-  useEffect(() => {
+    useEffect(() => {
     if (!enabled) return;
+    useEffect(() => {
+    if (!enabled) return;
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'default') return;
+
+    Notification.requestPermission();
+    }, [enabled]);
     if (typeof Notification === 'undefined') return;
     if (!isStandalone) return;
 
@@ -101,7 +119,8 @@ export default function useNotifications({
     };
 
     const tick = async () => {
-      if (Notification.permission !== 'granted') return;
+      const ok = await ensurePermission();
+if (!ok) return;
       if (!isWithinWindow(settings)) return;
 
       const meta = readMeta();

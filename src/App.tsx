@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { loadState, saveState, defaultState } from './lib/storage';
 import { getStreak, getLongestStreak, getTotalCompletions, getHabitStats } from './lib/stats';
 import { groupByDate, normalizeCompletions } from './lib/completion';
-import { localDateString, getPreviousDate, normalizeDate  } from './lib/date';
+import { localDateString} from './lib/date';
 import { buildYearSummaries, getDayBackground } from './lib/heatmap';
 
 import reducer from './reducers/appReducer';
@@ -199,6 +199,7 @@ function App() {
     dispatch,
   });
 
+
   /* ================= HANDLERS ================= */
 
   const handleMarkToday = (habit: Habit) =>
@@ -250,16 +251,7 @@ function App() {
   };
 
 
-  const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) return false;
 
-    if (Notification.permission === 'granted') return true;
-
-    if (Notification.permission === 'denied') return false;
-
-    const res = await Notification.requestPermission();
-    return res === 'granted';
-  };
 
   const handleSaveSettings = async () => {
     setSettingsOpen(false);
@@ -335,7 +327,6 @@ function App() {
         setSettingsOpen={setSettingsOpen}
         state={state}
         dispatch={dispatch}
-        requestNotificationPermission={requestNotificationPermission}
         handleSaveSettings={handleSaveSettings}
       />
 

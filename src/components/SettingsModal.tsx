@@ -6,7 +6,6 @@ interface SettingsModalProps {
   setSettingsOpen: (open: boolean) => void;
   state: AppState;
   dispatch: React.Dispatch<any>;
-  requestNotificationPermission: () => Promise<boolean>;
   handleSaveSettings: () => void;
 }
 
@@ -15,7 +14,6 @@ function SettingsModal({
   setSettingsOpen,
   state,
   dispatch,
-  requestNotificationPermission,
   handleSaveSettings,
 }: SettingsModalProps) {
   const { t, i18n } = useTranslation();
@@ -51,20 +49,6 @@ function SettingsModal({
               checked={state.notificationSettings.enabled}
               onChange={async (e) => {
                 const enabled = e.target.checked;
-
-                if (enabled) {
-                  const granted =
-                    await requestNotificationPermission();
-
-                  if (!granted) {
-                    alert(
-                      i18n.language === 'tr'
-                        ? 'Bildirim izni verilmedi.'
-                        : 'Notification permission denied.'
-                    );
-                    return;
-                  }
-                }
 
                 dispatch({
                   type: 'updateNotificationSettings',
