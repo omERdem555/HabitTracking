@@ -7,19 +7,11 @@ type Props = {
 
 export default function ColorPicker({ value, onChange }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
   const [hue, setHue] = useState(210);
 
-  const draw = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // base hue fill
+  const draw = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    // base hue
     ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
     ctx.fillRect(0, 0, width, height);
 
@@ -38,8 +30,36 @@ export default function ColorPicker({ value, onChange }: Props) {
     ctx.fillRect(0, 0, width, height);
   };
 
+  const resizeAndDraw = () => {
+    const canvas = canvasRef.current;
+    const wrapper = wrapperRef.current;
+    if (!canvas || !wrapper) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    const width = Math.min(wrapper.offsetWidth, 280); // mobile limit
+    const height = 140;
+
+    // physical size
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+
+    // display size
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+
+    ctx.scale(dpr, dpr);
+
+    draw(ctx, width, height);
+  };
+
   useEffect(() => {
-    draw();
+    resizeAndDraw();
+    window.addEventListener('resize', resizeAndDraw);
+    return () => window.removeEventListener('resize', resizeAndDraw);
   }, [hue]);
 
   const pickColor = (e: React.MouseEvent) => {
@@ -66,21 +86,34 @@ export default function ColorPicker({ value, onChange }: Props) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div
+      ref={wrapperRef}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+        width: '100%',
+        maxWidth: 280,
+      }}
+    >
       <input
         type="range"
         min={0}
         max={360}
         value={hue}
         onChange={(e) => setHue(Number(e.target.value))}
+        style={{ width: '100%' }}
       />
 
       <canvas
         ref={canvasRef}
-        width={220}
-        height={140}
         onClick={pickColor}
-        style={{ borderRadius: 8, cursor: 'crosshair' }}
+        style={{
+          borderRadius: 10,
+          cursor: 'crosshair',
+          width: '100%',
+          touchAction: 'none',
+        }}
       />
     </div>
   );
