@@ -88,10 +88,11 @@ export default function AddHabitForm({ onAdd, t }: Props) {
                 boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
               }}
             >
-              <ColorPicker
-                value={color}
-                onChange={setColor}
-              />
+            <ColorPicker
+            value={color}
+            onChange={setColor}
+            onClose={() => setColorOpen(false)}
+            />
             </div>
           )}
         </div>
