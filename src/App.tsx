@@ -195,8 +195,7 @@ function App() {
     habits: state.habits,
     completions: state.completions,
     language: i18n.language,
-    isStandalone,
-    dispatch,
+    isStandalone
   });
 
 

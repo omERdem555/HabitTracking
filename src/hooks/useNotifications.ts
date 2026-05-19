@@ -1,17 +1,15 @@
 import { useEffect, useRef } from 'react';
-import type { AppState, Habit, Completion } from '../types';
+import type { AppState, Habit } from '../types';
 import { localDateString } from '../lib/date';
-
-type NotificationSettings = AppState['notificationSettings'];
+import { buildReminderMessage } from '../lib/notificationMessages';
 
 type Params = {
   enabled: boolean;
-  settings: NotificationSettings;
+  settings: AppState['notificationSettings'];
   habits: Habit[];
-  completions: Completion[];
+  completions: { habitId: string; date: string }[];
   language: string;
   isStandalone: boolean;
-  dispatch: React.Dispatch<any>;
 };
 
 const META_KEY = 'habit-tracker-meta';
@@ -19,8 +17,7 @@ const META_KEY = 'habit-tracker-meta';
 const readMeta = () => {
   try {
     const raw = localStorage.getItem(META_KEY);
-    if (!raw) return { lastNotified: 0 };
-    return JSON.parse(raw) as { lastNotified: number };
+    return raw ? JSON.parse(raw) : { lastNotified: 0 };
   } catch {
     return { lastNotified: 0 };
   }
@@ -32,30 +29,6 @@ const writeMeta = (meta: { lastNotified: number }) => {
   } catch {}
 };
 
-const normalizeDate = (value: string) => value.slice(0, 10);
-
-const getPreviousDate = (dateString: string) => {
-  const date = new Date(`${dateString}T00:00:00`);
-  date.setDate(date.getDate() - 1);
-  return date.toISOString().slice(0, 10);
-};
-
-const isWithinWindow = (settings: NotificationSettings) => {
-  const hour = new Date().getHours();
-  return settings.startHour <= hour && hour <= settings.endHour;
-};
-
-const ensurePermission = async () => {
-  if (!('Notification' in window)) return false;
-
-  if (Notification.permission === 'granted') return true;
-
-  if (Notification.permission === 'denied') return false;
-
-  const result = await Notification.requestPermission();
-  return result === 'granted';
-};
-
 export default function useNotifications({
   enabled,
   settings,
@@ -63,7 +36,6 @@ export default function useNotifications({
   completions,
   language,
   isStandalone,
-  dispatch,
 }: Params) {
   const intervalRef = useRef<number | null>(null);
 
@@ -71,107 +43,84 @@ export default function useNotifications({
     if (!enabled) return;
     if (!isStandalone) return;
     if (!('Notification' in window)) return;
-    if (Notification.permission !== 'granted') return;
 
     const getMissingToday = () => {
       const today = localDateString();
-      const set = new Set(
-        completions.map(c => `${c.habitId}|${normalizeDate(c.date)}`)
+
+      const doneSet = new Set(
+        completions
+          .filter(c => c.date.slice(0, 10) === today)
+          .map(c => c.habitId)
       );
 
-      return habits.filter(
-        h => h.active && !set.has(`${h.id}|${today}`)
-      );
+      return habits.filter(h => h.active && !doneSet.has(h.id));
     };
 
     const getMissedYesterday = () => {
-      const today = localDateString();
-      const yesterday = getPreviousDate(today);
-      const beforeYesterday = getPreviousDate(yesterday);
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      const yd = y.toISOString().slice(0, 10);
 
-      return habits.filter(h => {
-        if (!h.active) return false;
+      const doneSet = new Set(
+        completions
+          .filter(c => c.date.slice(0, 10) === yd)
+          .map(c => c.habitId)
+      );
 
-        const hadYesterday = completions.some(
-          c =>
-            c.habitId === h.id &&
-            normalizeDate(c.date) === yesterday
-        );
+      return habits.filter(h => h.active && !doneSet.has(h.id));
+    };
 
-        const hadBefore = completions.some(
-          c =>
-            c.habitId === h.id &&
-            normalizeDate(c.date) === beforeYesterday
-        );
-
-        return !hadYesterday && hadBefore;
-      });
+    const canNotify = () => {
+      return Notification.permission === 'granted';
     };
 
     const tick = async () => {
-      const ok = await ensurePermission();
-      if (!ok) return;
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
 
-      if (!isWithinWindow(settings)) return;
+    const meta = readMeta();
+    const now = Date.now();
 
-      const meta = readMeta();
-      const now = Date.now();
+    const interval = settings.intervalHours * 60 * 60 * 1000;
+    if (now - meta.lastNotified < interval) return;
 
-      const minInterval =
-        settings.intervalHours * 60 * 60 * 1000;
+    const missing = getMissingToday();
+    if (missing.length === 0) return;
 
-      if (now - meta.lastNotified < minInterval) return;
+    const missedYesterday = getMissedYesterday();
 
-      const missing = getMissingToday();
-      if (missing.length === 0) return;
+    const title = language === 'tr' ? 'Hatırlatma' : 'Reminder';
 
-      const missedYesterday = getMissedYesterday();
+    const body = buildReminderMessage(
+        language,
+        missing,
+        missedYesterday
+    );
 
-      const title =
-        language === 'tr' ? 'Hatırlatma' : 'Reminder';
+    try {
+        const reg = await navigator.serviceWorker.getRegistration();
 
-      const body =
-        missedYesterday.length > 0
-          ? language === 'tr'
-            ? `Dün kaçırılan: ${missedYesterday
-                .slice(0, 3)
-                .map(h => h.name)
-                .join(', ')}`
-            : `Missed yesterday: ${missedYesterday
-                .slice(0, 3)
-                .map(h => h.name)
-                .join(', ')}`
-          : language === 'tr'
-          ? `Bugün eksik: ${missing
-              .slice(0, 3)
-              .map(h => h.name)
-              .join(', ')}`
-          : `Missing today: ${missing
-              .slice(0, 3)
-              .map(h => h.name)
-              .join(', ')}`;
+        const options = {
+        body,
+        icon: '/icon512.png',
+        data: {
+            type: 'reminder',
+            habitIds: missing.map(h => h.id),
+        },
+        };
 
-      try {
-        const registration =
-          await navigator.serviceWorker.getRegistration();
-
-        if (registration?.showNotification) {
-          registration.showNotification(title, {
-            body,
-            data: {
-              type: 'reminder',
-              habitIds: missing.map(h => h.id),
-            },
-            icon: '/icon512.png',
-          });
+        if (reg?.showNotification) {
+        reg.showNotification(title, options);
         } else {
-          new Notification(title, { body });
+        new Notification(title, {
+            body: options.body,
+        });
         }
 
         writeMeta({ lastNotified: now });
-      } catch {
-        // silent
-      }
+    } catch {
+        // silent fail
+    }
     };
 
     intervalRef.current = window.setInterval(
@@ -186,47 +135,5 @@ export default function useNotifications({
         clearInterval(intervalRef.current);
       }
     };
-  }, [
-    enabled,
-    settings,
-    habits,
-    completions,
-    language,
-    isStandalone,
-  ]);
-
-  useEffect(() => {
-    const handler = (event: MessageEvent) => {
-      const msg = event.data;
-      if (!msg || msg.type !== 'notificationAction') return;
-
-      const { action, data } = msg;
-
-      if (
-        action === 'complete' &&
-        Array.isArray(data?.habitIds)
-      ) {
-        const today = localDateString();
-
-        data.habitIds.forEach((habitId: string) => {
-          dispatch({
-            type: 'addCompletion',
-            payload: { habitId, date: today },
-          });
-        });
-      }
-    };
-
-    navigator.serviceWorker?.addEventListener(
-      'message',
-      handler as any
-    );
-
-    return () => {
-      navigator.serviceWorker?.removeEventListener(
-        'message',
-        handler as any
-      );
-    };
-  }, [dispatch]);
+  }, [enabled, settings, habits, completions, language, isStandalone]);
 }
