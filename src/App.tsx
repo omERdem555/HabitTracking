@@ -415,18 +415,27 @@ function App() {
   };
 
   const requestNotificationPermission = async () => {
-  if (!('Notification' in window)) return false;
+    if (!('Notification' in window)) return false;
 
-  const permission = await Notification.requestPermission();
+    if (Notification.permission === 'granted') return true;
 
-  return permission === 'granted';
-};
+    if (Notification.permission === 'denied') return false;
+
+    const result = await Notification.requestPermission();
+
+    return result === 'granted';
+  };
 
 const handleSaveSettings = async () => {
   if (state.notificationSettings.enabled) {
-    const granted = await requestNotificationPermission();
+    const permission = Notification.permission;
 
-    if (!granted) {
+    const granted =
+        permission === 'granted'
+      ? true
+      : await requestNotificationPermission();
+
+  if (!granted) {
       alert(
         i18n.language === 'tr'
           ? 'Bildirim izni gerekli.'
@@ -437,7 +446,9 @@ const handleSaveSettings = async () => {
   }
 
   setSettingsOpen(false);
+  console.log('Notification.permission:', Notification.permission);
 };
+
 
 // Reminder scheduler & missed-habit detection (foreground)
 const META_KEY = 'habit-tracker-meta';
