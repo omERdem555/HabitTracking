@@ -43,7 +43,6 @@ export default function useNotifications({
 
     // ❗ single source of truth
     if (!enabled) return;
-    console.log('notification permission:', Notification.permission);
     if (Notification.permission !== 'granted') return;
 
     const getMissingToday = () => {
@@ -73,7 +72,6 @@ export default function useNotifications({
     };
 
     const tick = async () => {
-      console.log('tick fired');
       const hour = new Date().getHours();
 
       if (hour < settings.startHour || hour > settings.endHour) return;
@@ -85,9 +83,6 @@ export default function useNotifications({
       if (now - meta.lastNotified < interval) return;
 
 
-      new Notification('TEST', {
-        body: 'Notification system works',
-      });
       const missing = getMissingToday();
       if (missing.length === 0) return;
 
@@ -120,7 +115,7 @@ export default function useNotifications({
 
     if (intervalRef.current) clearInterval(intervalRef.current);
 
-    intervalRef.current = window.setInterval(tick, 60 * 1000);
+    intervalRef.current = window.setInterval(tick, 15 * 60 * 1000);
     tick();
 
     return () => {

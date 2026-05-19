@@ -20,53 +20,84 @@ function SettingsModal({
 
   if (!settingsOpen) return null;
 
-  const syncPermissionStatus = async (enabled: boolean) => {
-    if (!('Notification' in window)) {
-      dispatch({
-        type: 'updateNotificationSettings',
-        payload: {
-          ...state.notificationSettings,
-          enabled: false,
-          permissionStatus: 'denied',
-        },
-      });
-      return;
-    }
-
+  const handleNotificationToggle = async (checked: boolean) => {
     // OFF
-    if (!enabled) {
+    if (!checked) {
       dispatch({
         type: 'updateNotificationSettings',
         payload: {
           ...state.notificationSettings,
           enabled: false,
-          permissionStatus: Notification.permission,
         },
       });
+
       return;
     }
 
-    // ON → always sync with browser truth
-    const permission =
-      Notification.permission === 'default'
-        ? await Notification.requestPermission()
-        : Notification.permission;
+    // Browser support check
+    if (!('Notification' in window)) {
+      alert(
+        i18n.language === 'tr'
+          ? 'Bu cihaz bildirim desteklemiyor.'
+          : 'Notifications are not supported on this device.',
+      );
 
-    dispatch({
-      type: 'updateNotificationSettings',
-      payload: {
-        ...state.notificationSettings,
-        enabled: permission === 'granted',
-        permissionStatus: permission,
-      },
-    });
+      return;
+    }
+
+    // Already granted
+    if (Notification.permission === 'granted') {
+      dispatch({
+        type: 'updateNotificationSettings',
+        payload: {
+          ...state.notificationSettings,
+          enabled: true,
+        },
+      });
+
+      return;
+    }
+
+    // Ask permission
+    const permission = await Notification.requestPermission();
+
+    if (permission === 'granted') {
+      dispatch({
+        type: 'updateNotificationSettings',
+        payload: {
+          ...state.notificationSettings,
+          enabled: true,
+        },
+      });
+    } else {
+      dispatch({
+        type: 'updateNotificationSettings',
+        payload: {
+          ...state.notificationSettings,
+          enabled: false,
+        },
+      });
+
+      alert(
+        i18n.language === 'tr'
+          ? 'Bildirim izni reddedildi.'
+          : 'Notification permission denied.',
+      );
+    }
   };
 
   return (
     <div className="modal-backdrop" onClick={() => setSettingsOpen(false)}>
-      <div className="modal settings-modal" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal settings-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
-          <h3>{i18n.language === 'tr' ? 'Bildirim Ayarları' : 'Notification Settings'}</h3>
+          <h3>
+            {i18n.language === 'tr'
+              ? 'Bildirim Ayarları'
+              : 'Notification Settings'}
+          </h3>
 
           <button
             type="button"
@@ -82,7 +113,9 @@ function SettingsModal({
             <input
               type="checkbox"
               checked={state.notificationSettings.enabled}
-              onChange={(e) => syncPermissionStatus(e.target.checked)}
+              onChange={(e) =>
+                handleNotificationToggle(e.target.checked)
+              }
             />
 
             <span>
@@ -92,13 +125,26 @@ function SettingsModal({
             </span>
           </label>
 
-          <div style={{ fontSize: 12, opacity: 0.7 }}>
-            {state.notificationSettings.permissionStatus === 'granted' &&
-              'Bildirim izni verildi'}
-            {state.notificationSettings.permissionStatus === 'denied' &&
-              'Bildirim izni reddedildi'}
-            {state.notificationSettings.permissionStatus === 'default' &&
-              'İzin bekleniyor'}
+          <div
+            style={{
+              fontSize: 12,
+              opacity: 0.7,
+            }}
+          >
+            {Notification.permission === 'granted' &&
+              (i18n.language === 'tr'
+                ? 'Bildirim izni verildi'
+                : 'Notification permission granted')}
+
+            {Notification.permission === 'denied' &&
+              (i18n.language === 'tr'
+                ? 'Bildirim izni reddedildi'
+                : 'Notification permission denied')}
+
+            {Notification.permission === 'default' &&
+              (i18n.language === 'tr'
+                ? 'Bildirim izni bekleniyor'
+                : 'Notification permission pending')}
           </div>
 
           <div className="settings-field">
@@ -130,7 +176,9 @@ function SettingsModal({
 
           <div className="settings-field">
             <span className="settings-label">
-              {i18n.language === 'tr' ? 'Başlangıç Saati' : 'Start Hour'}
+              {i18n.language === 'tr'
+                ? 'Başlangıç Saati'
+                : 'Start Hour'}
             </span>
 
             <input
@@ -152,7 +200,9 @@ function SettingsModal({
 
           <div className="settings-field">
             <span className="settings-label">
-              {i18n.language === 'tr' ? 'Bitiş Saati' : 'End Hour'}
+              {i18n.language === 'tr'
+                ? 'Bitiş Saati'
+                : 'End Hour'}
             </span>
 
             <input

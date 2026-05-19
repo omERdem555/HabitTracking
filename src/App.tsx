@@ -254,6 +254,26 @@ function App() {
 
 
   const handleSaveSettings = async () => {
+    if (state.notificationSettings.enabled) {
+
+      if (!('Notification' in window)) {
+        alert('Notifications not supported');
+        return;
+      }
+
+      const permission = await Notification.requestPermission();
+
+      if (permission !== 'granted') {
+        alert(
+          i18n.language === 'tr'
+            ? 'Bildirim izni verilmedi.'
+            : 'Notification permission denied.'
+        );
+
+        return;
+      }
+    }
+
     setSettingsOpen(false);
   };
 
