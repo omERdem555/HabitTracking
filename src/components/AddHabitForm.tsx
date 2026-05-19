@@ -1,17 +1,15 @@
 import { useState } from 'react';
+import ColorPicker from './ColorPicker';
 
 interface Props {
   onAdd: (name: string, color: string) => void;
   t: (key: string) => string;
 }
 
-const getColorFromHue = (hue: number) => `hsl(${hue}, 70%, 55%)`;
-
 export default function AddHabitForm({ onAdd, t }: Props) {
   const [name, setName] = useState('');
-  const [hue, setHue] = useState(210);
-
-  const color = getColorFromHue(hue);
+  const [color, setColor] = useState('#60a5fa');
+  const [colorOpen, setColorOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +20,8 @@ export default function AddHabitForm({ onAdd, t }: Props) {
     onAdd(trimmed, color);
 
     setName('');
-    setHue(210);
+    setColor('#60a5fa');
+    setColorOpen(false);
   };
 
   return (
@@ -33,10 +32,18 @@ export default function AddHabitForm({ onAdd, t }: Props) {
         background: 'var(--card-bg)',
         border: '1px solid rgba(148,163,184,0.2)',
         marginBottom: '1rem',
+        position: 'relative',
       }}
     >
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: 'flex',
+          gap: '0.75rem',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+        }}
+      >
         {/* INPUT */}
         <input
           value={name}
@@ -53,26 +60,40 @@ export default function AddHabitForm({ onAdd, t }: Props) {
           }}
         />
 
-        {/* COLOR SLIDER */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-          <input
-            type="range"
-            min={0}
-            max={360}
-            value={hue}
-            onChange={(e) => setHue(Number(e.target.value))}
-            style={{ width: '140px' }}
-          />
-
+        {/* COLOR BUTTON */}
+        <div style={{ position: 'relative' }}>
           <div
+            onClick={() => setColorOpen((v) => !v)}
             style={{
-              width: '100%',
-              height: '10px',
-              borderRadius: '6px',
+              width: 34,
+              height: 34,
+              borderRadius: 10,
               background: color,
-              transition: '0.2s',
+              cursor: 'pointer',
+              border: '1px solid rgba(148,163,184,0.4)',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
             }}
           />
+
+          {colorOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '45px',
+                zIndex: 50,
+                background: 'var(--card-bg)',
+                border: '1px solid rgba(148,163,184,0.25)',
+                borderRadius: '12px',
+                padding: '10px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+              }}
+            >
+              <ColorPicker
+                value={color}
+                onChange={setColor}
+              />
+            </div>
+          )}
         </div>
 
         {/* BUTTON */}
