@@ -6,12 +6,8 @@
   "start_url": "/?source=pwa",
   "scope": "/",
 
-  "display": "fullscreen",
-  "display_override": [
-    "fullscreen",
-    "standalone"
-  ],
-
+  "display": "standalone",
+  
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
