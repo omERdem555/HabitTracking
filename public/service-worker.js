@@ -3,7 +3,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: 'YOUR_API_KEY',
+  apiKey: 'AIzaSyCwQ6ilSsHfgJfyooDuJhcI4SCrSmwe7YY',
   authDomain: 'habit-tracker-e4d82.firebaseapp.com',
   projectId: 'habit-tracker-e4d82',
   storageBucket: 'habit-tracker-e4d82.firebasestorage.app',

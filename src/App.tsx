@@ -103,11 +103,8 @@ function App() {
 
         if (permission !== 'granted') return;
 
-        const registration = await navigator.serviceWorker.ready;
-
         const token = await getToken(messaging, {
-          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-          serviceWorkerRegistration: registration,
+          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
         });
 
         console.log('FCM TOKEN:', token);
