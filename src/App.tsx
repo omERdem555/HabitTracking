@@ -28,6 +28,10 @@ import AddHabitForm from './components/AddHabitForm';
 import useNotifications from './hooks/useNotifications';
 import useTheme from './hooks/useTheme';
 
+/*firebase*/
+import { messaging } from './lib/firebase';
+import { getToken } from 'firebase/messaging';
+
 /* constants */
 const HABIT_COLOR = '#60a5fa';
 
@@ -86,6 +90,33 @@ function App() {
     window.addEventListener('beforeinstallprompt', handler);
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  /* Firebase Cloud Messaging token retrieval */
+
+  useEffect(() => {
+    const initFCM = async () => {
+      try {
+        if (!('serviceWorker' in navigator)) return;
+
+        const permission = await Notification.requestPermission();
+
+        if (permission !== 'granted') return;
+
+        const registration = await navigator.serviceWorker.ready;
+
+        const token = await getToken(messaging, {
+          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+          serviceWorkerRegistration: registration,
+        });
+
+        console.log('FCM TOKEN:', token);
+      } catch (err) {
+        console.error('FCM init error', err);
+      }
+    };
+
+    initFCM();
   }, []);
 
   /* ================= DERIVED ================= */

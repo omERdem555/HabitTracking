@@ -1,3 +1,39 @@
+//Firebase Cloud Messaging için güncellenmiş SW
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: 'YOUR_API_KEY',
+  authDomain: 'habit-tracker-e4d82.firebaseapp.com',
+  projectId: 'habit-tracker-e4d82',
+  storageBucket: 'habit-tracker-e4d82.firebasestorage.app',
+  messagingSenderId: '41819438398',
+  appId: '1:41819438398:web:e059660ac9f485dfb4806f',
+});
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  console.log('Background message', payload);
+
+  self.registration.showNotification(
+    payload.notification?.title || 'Habit Tracker',
+    {
+      body: payload.notification?.body || '',
+      icon: '/icon192.png',
+    }
+  );
+});
+
+
+
+
+
+
+
+
+//Önceki SW
+
 const CACHE_VERSION = 'v6';
 const RUNTIME_CACHE = `habit-tracker-runtime-${CACHE_VERSION}`;
 
