@@ -29,8 +29,9 @@ import useNotifications from './hooks/useNotifications';
 import useTheme from './hooks/useTheme';
 
 /*firebase*/
-import { messaging, auth  } from './lib/firebase';
-import { getToken } from 'firebase/messaging';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './lib/firebase';
+import { initFCMForUser } from './lib/fcm';
 
 /* constants */
 const HABIT_COLOR = '#60a5fa';
@@ -95,46 +96,35 @@ function App() {
   /* Firebase Cloud Messaging token retrieval */
 
   useEffect(() => {
-    const initFCM = async () => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
       try {
-        if (!('serviceWorker' in navigator)) return;
-
-        const permission = await Notification.requestPermission();
-
-        if (permission !== 'granted') return;
-
-        const registration = await navigator.serviceWorker.ready;
-
-        const token = await getToken(messaging, {
-          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-          serviceWorkerRegistration: registration,
-        });
-
-        console.log('FCM TOKEN:', token);
-        await fetch(
-          'YOUR_FUNCTION_URL/registerDevice',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              token,
-              userId: auth.currentUser?.uid ?? null,
-              platform: 'web',
-              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              language: i18n.language,
-              notificationSettings: state.notificationSettings,
-            }),
-          }
+        const token = await initFCMForUser(
+          user.uid,
+          i18n,
+          state.notificationSettings
         );
-      } catch (err) {
-        console.error('FCM init error', err);
-      }
-    };
 
-    initFCM();
-  }, []);
+        // -----------------------------
+        // TOKEN DUPLICATE GUARD
+        // -----------------------------
+        if (!token) return;
+
+        const storedToken = localStorage.getItem('fcm_token');
+
+        if (storedToken === token) {
+          return;
+        }
+
+        localStorage.setItem('fcm_token', token);
+      } catch (err) {
+        console.error('FCM init failed:', err);
+      }
+    });
+
+    return () => unsub();
+  }, [i18n, state.notificationSettings]);
 
   /* ================= DERIVED ================= */
 
