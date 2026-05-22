@@ -21,6 +21,7 @@ export const registerDevice = onRequest(async (req, res) => {
 
     const {
       token,
+      userId,
       platform = "web",
       timezone,
       language = "tr",
@@ -49,6 +50,7 @@ export const registerDevice = onRequest(async (req, res) => {
     if (doc.exists) {
       await deviceRef.update({
         token,
+        userId: userId ?? null,
         lastSeen: now,
         platform,
         timezone: timezone ?? null,
@@ -58,6 +60,7 @@ export const registerDevice = onRequest(async (req, res) => {
     } else {
       await deviceRef.set({
         token,
+        userId: userId ?? null,
         createdAt: now,
         lastSeen: now,
         platform,

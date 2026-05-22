@@ -29,7 +29,7 @@ import useNotifications from './hooks/useNotifications';
 import useTheme from './hooks/useTheme';
 
 /*firebase*/
-import { messaging } from './lib/firebase';
+import { messaging, auth  } from './lib/firebase';
 import { getToken } from 'firebase/messaging';
 
 /* constants */
@@ -120,6 +120,7 @@ function App() {
             },
             body: JSON.stringify({
               token,
+              userId: auth.currentUser?.uid ?? null,
               platform: 'web',
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
               language: i18n.language,

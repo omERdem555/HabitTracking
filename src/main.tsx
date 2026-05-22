@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App';
+import Root from './Root';
 import './styles.css';
 import './i18n/config';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-    <App />
+  <Root />
 );
 
 if ('serviceWorker' in navigator) {
