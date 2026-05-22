@@ -2,14 +2,16 @@
  * 1. CORE FIREBASE INITIALIZATION
  **********************************************/
 import { initializeApp } from 'firebase/app';
+import { initializeAuth, browserLocalPersistence } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyCwQ6ilSsHfgJfyooDuJhcI4SCrSmwe7YY",
+  authDomain: "habit-tracker-e4d82.firebaseapp.com",
+  projectId: "habit-tracker-e4d82",
+  storageBucket: "habit-tracker-e4d82.firebasestorage.app",
+  messagingSenderId: "41819438398",
+  appId: "1:41819438398:web:e059660ac9f485dfb4806f",
+  measurementId: "G-P4K2NR598B"
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
@@ -26,7 +28,9 @@ import {
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
 
-export const auth = getAuth(firebaseApp);
+export const auth = initializeAuth(firebaseApp, {
+  persistence: browserLocalPersistence
+});
 
 
 /**
