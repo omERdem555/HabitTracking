@@ -111,6 +111,22 @@ function App() {
         });
 
         console.log('FCM TOKEN:', token);
+        await fetch(
+          'YOUR_FUNCTION_URL/registerDevice',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              token,
+              platform: 'web',
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              language: i18n.language,
+              notificationSettings: state.notificationSettings,
+            }),
+          }
+        );
       } catch (err) {
         console.error('FCM init error', err);
       }

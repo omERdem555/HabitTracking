@@ -1,5 +1,5 @@
-import { setGlobalOptions } from "firebase-functions";
-import { onRequest } from "firebase-functions/v2/https";
+import {setGlobalOptions} from "firebase-functions";
+import {onRequest} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 
 import * as admin from "firebase-admin";
@@ -7,7 +7,7 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 const db = admin.firestore();
 
-setGlobalOptions({ maxInstances: 10 });
+setGlobalOptions({maxInstances: 10});
 
 /**
  * Device registration endpoint (FCM token registry)
@@ -15,14 +15,25 @@ setGlobalOptions({ maxInstances: 10 });
 export const registerDevice = onRequest(async (req, res) => {
   try {
     if (req.method !== "POST") {
-      res.status(405).json({ error: "Method Not Allowed" });
+      res.status(405).json({error: "Method Not Allowed"});
       return;
     }
 
-    const { token, platform = "web", timezone } = req.body;
+    const {
+      token,
+      platform = "web",
+      timezone,
+      language = "tr",
+      notificationSettings = {
+        enabled: false,
+        startHour: 9,
+        endHour: 21,
+        intervalHours: 4,
+      },
+    } = req.body;
 
     if (!token) {
-      res.status(400).json({ error: "Missing token" });
+      res.status(400).json({error: "Missing token"});
       return;
     }
 
@@ -41,6 +52,8 @@ export const registerDevice = onRequest(async (req, res) => {
         lastSeen: now,
         platform,
         timezone: timezone ?? null,
+        language,
+        notificationSettings,
       });
     } else {
       await deviceRef.set({
@@ -49,6 +62,8 @@ export const registerDevice = onRequest(async (req, res) => {
         lastSeen: now,
         platform,
         timezone: timezone ?? null,
+        language,
+        notificationSettings,
       });
     }
 
@@ -56,10 +71,9 @@ export const registerDevice = onRequest(async (req, res) => {
       success: true,
       deviceId,
     });
-
   } catch (err) {
     logger.error("registerDevice error", err);
-    res.status(500).json({ error: "Internal error" });
+    res.status(500).json({error: "Internal error"});
     return;
   }
 });
